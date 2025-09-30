@@ -11,3 +11,9 @@ jobs:
         uses: lvignoli/typst-action@main
         with:
           source_file: Logique/logique.typ
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-pdf
+          path: main.pdf
