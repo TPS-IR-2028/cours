@@ -16,4 +16,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: compiled-pdf
-          path: main.pdf
+          path: Logique/logique.pdf
