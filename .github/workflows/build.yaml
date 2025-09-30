@@ -1,4 +1,5 @@
 name: Build Typst document
+
 on: [push, workflow_dispatch]
 
 permissions:
