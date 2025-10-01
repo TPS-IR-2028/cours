@@ -1,9 +1,10 @@
+#import "../conf.typ": conf
+#show: conf.with(subject: "Logique et programmation logique")
+
 #import "@preview/frame-it:1.2.0": *
 #import "@preview/curryst:0.5.1": prooftree, rule
 
-= Logique et programmation Logique
-
-== 1. Rappels
+= Rappels
 
 #let (example, feature, variant, syntax) = frames(
   example: ("Exemple",),
@@ -20,7 +21,7 @@
   - Des règles
 ]
 
-=== Interprétation des formules
+== Interprétation des formules
 
 #syntax[Interprétation][
   Une interprétation $I$ est une valeur booléenne sur les variables propositionnelles $I(F)$:
@@ -53,7 +54,7 @@
   Pour toute formule $F$, il existe $F'$ sous _FNC_ telle que $F equiv F'$.
 ]
 
-=== Substitution
+== Substitution
 #syntax[][
   $F[x <- G]$ la formule $F$ dans laquelle la var $x$ est substituée par $G$ est définie par :
   - Si $F=p$ alors :
@@ -67,7 +68,7 @@
   Si $F$ est valide, alors $F[x <- G]$ l'est aussi.
 ]
 
-== 2. Système formel
+= Système formel
 
 #syntax[][
   - Un *système formel* est un ensemble d'axiomes $cal(A)$ et de règles inductives $cal(R)$
@@ -112,7 +113,7 @@ $Pi$ constitutes a derivation of $phi$.
   $tack F quad <-> quad tack.r.double F$ signifie que le système est correct et complet.
 ]
 
-=== Système de Hilbert
+== Système de Hilbert
 $cal(A) : K = A -> (B -> A)$ et $S = (A -> (B -> C)) -> ((A -> B) -> (A -> C))$
 
 $cal(R) :
