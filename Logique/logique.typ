@@ -16,7 +16,7 @@
 
 #syntax[Formule][
   Elle est définie inductivement de la manière suivante :
-  - Des éléments de base qui sont des variables propositionnelles : ${a, b, dots, A, B}$
+  - Des éléments de base qui sont des variables propositionnelles : ${a, b, ..., A, B}$
   - Des règles
 ]
 
@@ -40,7 +40,7 @@
 ]
 
 #feature[][
-  $A equiv B$ ssi $A arrow.l.r B$ est valide
+  $A equiv B$ ssi $A <-> B$ est valide
 ]
 
 #syntax[Forme Normale Conjonctive][
@@ -55,12 +55,12 @@
 
 === Substitution
 #syntax[][
-  $F[x arrow.l G]$ la formule $F$ dans laquelle la var $x$ est substituée par $G$ est définie par :
+  $F[x <- G]$ la formule $F$ dans laquelle la var $x$ est substituée par $G$ est définie par :
   - Si $F=p$ alors :
-    - Si $p=x, F[x arrow.l G] = G$
-    - Si $p eq.not x, F[x arrow.l G] = F$
+    - Si $p=x, F[x <- G] = G$
+    - Si $p != x, F[x <- G] = F$
   - Si $F=A -> B$ alors $F[x <- G] = A[x <- G] -> B[x <- G]$
-  - [$dots$]
+  - [$...$]
 ]
 
 #feature[][
@@ -79,11 +79,12 @@ Consider the following tree:
 
 $prooftree(
   rule(
+    name: i,
     phi,
     Pi_1,
     Pi_2,
   )
-)i$
+)$
 $Pi$ constitutes a derivation of $phi$.
 
 #example[][
@@ -117,11 +118,12 @@ $cal(A) : K = A -> (B -> A)$ et $S = (A -> (B -> C)) -> ((A -> B) -> (A -> C))$
 $cal(R) :
 prooftree(
   rule(
+    name: "MP",
     B,
     A,
     A -> B
   )
-)M\P$ (_Modus Ponens_)
+)$ (_Modus Ponens_)
 
 #feature[Méta théorème][
   Le système de Hilbert est correct.
