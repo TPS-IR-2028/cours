@@ -1,5 +1,5 @@
 #import "@preview/frame-it:1.2.0": *
-#import "@preview/curryst:0.5.1": rule, prooftree
+#import "@preview/curryst:0.5.1": prooftree, rule
 
 = Logique et programmation Logique
 
@@ -8,7 +8,7 @@
 #let (example, feature, variant, syntax) = frames(
   example: ("Exemple",),
   feature: ("Théorème",),
-  variant: ("Preuve,"),
+  variant: ("Preuve",),
   syntax: ("Définition",),
 )
 
@@ -20,7 +20,7 @@
   - Des règles
 ]
 
-=== Interprétation des formules 
+=== Interprétation des formules
 
 #syntax[Interprétation][
   Une interprétation $I$ est une valeur booléenne sur les variables propositionnelles $I(F)$:
@@ -28,7 +28,7 @@
     - $F = not A$, alors $I(F) = 1 - I(A)$
     - $F = A -> B$, alors $I(F)=1$ ssi $I(A)=0$ ou $I(B)=0$
     - $F = A and B$, alors $I(F)=min(I(A), I(B))$
-    - $F = A or B$, alors $I(F)=max(I(A),I(B))$
+    - $F = A or B$, alors $I(F)=max(I(A), I(B))$
   - F est *satisfiable* si $exists I, I(F) = 1$
   - F est *valide* / une *tautologie* si $forall I, I(F)=1$
   - F est *contradictoire* si $forall I, I(F)=0$
@@ -36,11 +36,11 @@
 
 #syntax[Conséquence et équivalence logique][
   - Conséquence logique : $A tack.r.double B$ ssi $forall I, I(A)=1$, alors $I(B)=1$
-  - Équivalence logique : $A equiv B$ ssi $A tack.r.double B $ et $B tack.r.double A$
+  - Équivalence logique : $A equiv B$ ssi $A tack.r.double B$ et $B tack.r.double A$
 ]
 
 #feature[][
-$A equiv B$ ssi $A arrow.l.r B$ est valide
+  $A equiv B$ ssi $A arrow.l.r B$ est valide
 ]
 
 #syntax[Forme Normale Conjonctive][
@@ -59,7 +59,7 @@ $A equiv B$ ssi $A arrow.l.r B$ est valide
   - Si $F=p$ alors :
     - Si $p=x, F[x arrow.l G] = G$
     - Si $p eq.not x, F[x arrow.l G] = F$
-  - Si $F=A -> B$ alors $F[x <- G] = A[x <- G] -> B[x <- G]$ 
+  - Si $F=A -> B$ alors $F[x <- G] = A[x <- G] -> B[x <- G]$
   - [$dots$]
 ]
 
@@ -78,36 +78,33 @@ $A equiv B$ ssi $A arrow.l.r B$ est valide
 Consider the following tree:
 
 $prooftree(
-    rule(
-      phi,
-      Pi_1,
-      Pi_2,
-    )
-  )i
-$
+  rule(
+    phi,
+    Pi_1,
+    Pi_2,
+  )
+)i$
 $Pi$ constitutes a derivation of $phi$.
 
 #example[][
-  $
-    cal(A) : {(0,0)}$ et $cal(R) : 
-    prooftree(
-      rule(
-        (x+1,y+1),
-        (x,y)
-      )
+  $cal(A) : {(0,0)}$ et $cal(R) :
+  prooftree(
+    rule(
+      (x+1,y+1),
+      (x,y)
     )
-  $
+  )$
 ]
 
 #syntax[Complétude et correction][
   Un système, muni d'une interprétation :
-    - Est *complet* si chaque formule valide est un théorème
-    - Est *correct* si chaque théorème est une formule valide
+  - Est *complet* si chaque formule valide est un théorème
+  - Est *correct* si chaque théorème est une formule valide
 ]
 
 #syntax[Théorème et preuve][
   - On note $tack F$ le fait que $F$ est un théorème
-  - On note ${P_1, dots, P_n} tack F$ le fait d'avoir une preuve dans laqelle $P_1, dots, P_n$ peuvent être des feuilles
+  - On note ${P_1, ..., P_n} tack F$ le fait d'avoir une preuve dans laquelle $P_1, ..., P_n$ peuvent être des feuilles
 ]
 
 #syntax[Observation][
@@ -118,13 +115,13 @@ $Pi$ constitutes a derivation of $phi$.
 $cal(A) : K = A -> (B -> A)$ et $S = (A -> (B -> C)) -> ((A -> B) -> (A -> C))$
 
 $cal(R) :
-  prooftree(
-    rule(
-      B,
-      A,
-      A -> B
-    )
-  )M\P$ (_Modus Ponens_)
+prooftree(
+  rule(
+    B,
+    A,
+    A -> B
+  )
+)M\P$ (_Modus Ponens_)
 
 #feature[Méta théorème][
   Le système de Hilbert est correct.
@@ -133,5 +130,5 @@ $cal(R) :
 #variant[Méta preuve][
   Par induction structurelle :
 
-  Axiomes : 
+  Axiomes :
 ]
