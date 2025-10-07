@@ -75,6 +75,7 @@ jobs:
 
       # 6. Upload les PDFs aussi sur GitHub Pages
       - name: Upload PDFs for GitHub Pages
+        id: deployment
         uses: actions/upload-pages-artifact@v4
         with:
           path: release
@@ -88,6 +89,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages-test
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
