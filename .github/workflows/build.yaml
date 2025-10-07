@@ -44,6 +44,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Sanitize artifact name
+        id: sanitize
+        shell: bash
+        run: |
+          # Remplace les caractères interdits dans les noms d’artefacts
+          safe_name=$(echo "${{ matrix.file }}" | tr '/\\:<>\"|?*\r\n' '_' | sed 's/^\.*//')
+          echo "safe_name=$safe_name" >> $GITHUB_OUTPUT
+          echo "Artifact safe name: $safe_name"
+
       - name: Build Typst document (matrix)
         uses: lvignoli/typst-action@main
         with:
@@ -55,9 +64,7 @@ jobs:
       - name: Upload PDF artifact for this job
         uses: actions/upload-artifact@v4
         with:
-          # artifact name will include the source path (sanitised by GitHub if needed)
-          name: pdf-${{ matrix.file }}
-          # each matrix job only has its own generated PDF in workspace, so glob is fine
+          name: pdf-${{ steps.sanitize.outputs.safe_name }}
           path: '**/*.pdf'
 
   collect:
