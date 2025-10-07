@@ -18,7 +18,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Trouver tous les fichiers .typ
+      # 2. Installer Typst
+      - name: Install Typst
+        run: |
+          curl -L https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz \
+            | tar -xJ
+          sudo mv typst /usr/local/bin/
+          typst --version
+
+      # 3. Trouver tous les fichiers .typ
       - name: Find Typst files
         id: find
         shell: bash
@@ -29,37 +37,22 @@ jobs:
             echo "❌ No Typst files found. Exiting."
             exit 1
           fi
-          # Écrire les fichiers dans un fichier temporaire pour Typst
           printf '%s\n' "${files[@]}" > typst_files.txt
-          # Exporter la liste au format multi-line string pour Typst
-          TYPST_FILES=$(cat typst_files.txt | sed 's/^/  /')
-          echo "TYPST_FILES<<EOF" >> $GITHUB_ENV
-          cat typst_files.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "Found ${#files[@]} files:"
+          cat typst_files.txt
 
-      # 3. Compiler tous les fichiers en une seule invocation Typst
-      - name: Typst
-        uses: lvignoli/typst-action@main
-        with:
-          source_file: ${{ steps.find.outputs.TYPST_FILES }}
-          options: |
-            --root
-            .
-
-      # 4. Renommer tous les PDFs avec timestamp
-      - name: Move PDFs to release with timestamp
+      # 4. Compiler tous les fichiers en PDFs avec timestamp
+      - name: Compile Typst files
         shell: bash
         run: |
           mkdir -p release
           TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
           while read -r typfile; do
             base=$(basename "$typfile" .typ)
-            pdf="${typfile%.typ}.pdf"
-            if [ -f "$pdf" ]; then
-              mv "$pdf" "release/${base}_${TIMESTAMP}.pdf"
-            fi
+            outfile="release/${base}_${TIMESTAMP}.pdf"
+            echo "🔧 Compiling $typfile → $outfile"
+            typst compile "$typfile" "$outfile"
           done < typst_files.txt
-          echo "All PDFs moved to release/ with timestamp."
 
       # 5. Upload bundle final des PDFs
       - name: Set artifact name
