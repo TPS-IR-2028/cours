@@ -31,13 +31,17 @@ jobs:
           fi
           # Écrire les fichiers dans un fichier temporaire pour Typst
           printf '%s\n' "${files[@]}" > typst_files.txt
-          echo "files=$(cat typst_files.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          # Exporter la liste au format multi-line string pour Typst
+          TYPST_FILES=$(cat typst_files.txt | sed 's/^/  /')
+          echo "TYPST_FILES<<EOF" >> $GITHUB_ENV
+          cat typst_files.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       # 3. Compiler tous les fichiers en une seule invocation Typst
       - name: Typst
         uses: lvignoli/typst-action@main
         with:
-          source_file: ${{ steps.find.outputs.files }}
+          source_file: ${{ env.TYPST_FILES }}
           options: |
             --root
             .
@@ -48,12 +52,13 @@ jobs:
         run: |
           mkdir -p release
           TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
-          for typfile in $(cat typst_files.txt); do
+          while read -r typfile; do
             base=$(basename "$typfile" .typ)
-            if [ -f "${typfile%.typ}.pdf" ]; then
-              mv "${typfile%.typ}.pdf" "release/${base}_${TIMESTAMP}.pdf"
+            pdf="${typfile%.typ}.pdf"
+            if [ -f "$pdf" ]; then
+              mv "$pdf" "release/${base}_${TIMESTAMP}.pdf"
             fi
-          done
+          done < typst_files.txt
           echo "All PDFs moved to release/ with timestamp."
 
       # 5. Upload bundle final des PDFs
@@ -72,7 +77,7 @@ jobs:
           path: release/*.pdf
 
       # 6. Créer Release (si push avec un tag)
-      - name: Create Release (if pushing a tag)
+      - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
