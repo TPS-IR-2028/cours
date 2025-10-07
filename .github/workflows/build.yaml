@@ -41,18 +41,27 @@ jobs:
           printf '%s\n' "${files[@]}" > typst_files.txt
           echo "Found ${#files[@]} files:"
           cat typst_files.txt
+          # exporter la liste comme variable pour bash
+          FILE_LIST=$(cat typst_files.txt | tr '\n' ' ')
+          echo "FILE_LIST=$FILE_LIST" >> $GITHUB_ENV
 
-      # 4. Compiler tous les fichiers en PDFs avec timestamp
+      # 4. Compiler tous les fichiers en une seule invocation Typst
       - name: Compile Typst files
         shell: bash
         run: |
           mkdir -p release
           TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
+          # compilation unique
+          typst compile $FILE_LIST --root .
+          # renommer les PDFs avec timestamp
           while read -r typfile; do
             base=$(basename "$typfile" .typ)
-            outfile="release/${base}_${TIMESTAMP}.pdf"
-            echo "🔧 Compiling $typfile → $outfile"
-            typst compile "$typfile" "$outfile"
+            if [ -f "$base.pdf" ]; then
+              mv "$base.pdf" "release/${base}_${TIMESTAMP}.pdf"
+            else
+              echo "❌ PDF not generated for $typfile"
+              exit 1
+            fi
           done < typst_files.txt
 
       # 5. Upload bundle final des PDFs
