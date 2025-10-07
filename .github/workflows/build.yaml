@@ -49,7 +49,9 @@ jobs:
         uses: lvignoli/typst-action@main
         with:
           source_file: ${{ matrix.file }}
-          options: --root .
+          options: |
+            --root
+            .
 
       - name: Move PDF to release with timestamp
         run: |
