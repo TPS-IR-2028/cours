@@ -81,7 +81,7 @@ jobs:
       pages: write
       id-token: write
     environment:
-      name: github-pages
+      name: github-pages-test
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download PDFs artifact
