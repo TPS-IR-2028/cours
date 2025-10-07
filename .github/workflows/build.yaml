@@ -41,7 +41,7 @@ jobs:
       - name: Typst
         uses: lvignoli/typst-action@main
         with:
-          source_file: ${{ env.TYPST_FILES }}
+          source_file: ${{ steps.find.outputs.TYPST_FILES }}
           options: |
             --root
             .
@@ -73,7 +73,7 @@ jobs:
       - name: Upload PDFs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
           path: release/*.pdf
 
       # 6. Créer Release (si push avec un tag)
