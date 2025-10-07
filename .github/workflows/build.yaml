@@ -11,16 +11,16 @@ permissions:
   contents: write
 
 jobs:
-  # 1. Trouver tous les fichiers .typ
-  find-files:
+  build:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.prepare.outputs.matrix }}
     steps:
+      # 1. Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - id: prepare
+      # 2. Trouver tous les fichiers .typ
+      - name: Find Typst files
+        id: find
         shell: bash
         run: |
           echo "🔍 Searching for .typ files..."
@@ -29,69 +29,49 @@ jobs:
             echo "❌ No Typst files found. Exiting."
             exit 1
           fi
-          printf '%s\n' "${files[@]}"
-          # créer la matrice
-          printf '%s\n' "${files[@]}" | python3 -c 'import sys,json; print(json.dumps([l.rstrip() for l in sys.stdin]))' > matrix.json
-          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
+          # Écrire les fichiers dans un fichier temporaire pour Typst
+          printf '%s\n' "${files[@]}" > typst_files.txt
+          echo "files=$(cat typst_files.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
 
-  build:
-    needs: find-files
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        file: ${{ fromJson(needs.find-files.outputs.matrix) }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      # 3. Compiler tous les fichiers en une seule invocation Typst
       - name: Typst
         uses: lvignoli/typst-action@main
         with:
-          source_file: ${{ matrix.file }}
+          source_file: ${{ steps.find.outputs.files }}
           options: |
             --root
             .
 
-      - name: Move PDF to release with timestamp
+      # 4. Renommer tous les PDFs avec timestamp
+      - name: Move PDFs to release with timestamp
+        shell: bash
         run: |
           mkdir -p release
           TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
-          # récupère juste le nom du fichier sans extension et sans dossier
-          base=$(basename "${{ matrix.file }}" .typ)
-          # déplace le PDF généré (x.typ → x.pdf)
-          mv "$(dirname "${{ matrix.file }}")/${base}.pdf" "release/${base}_${TIMESTAMP}.pdf"
-          echo "PDF_NAME=${base}_${TIMESTAMP}.pdf" >> $GITHUB_ENV
+          for typfile in $(cat typst_files.txt); do
+            base=$(basename "$typfile" .typ)
+            if [ -f "${typfile%.typ}.pdf" ]; then
+              mv "${typfile%.typ}.pdf" "release/${base}_${TIMESTAMP}.pdf"
+            fi
+          done
+          echo "All PDFs moved to release/ with timestamp."
 
-      - name: Upload individual PDF artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.PDF_NAME }}
-          path: release/${{ env.PDF_NAME }}
-
-  collect:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all individual PDFs
-        uses: actions/download-artifact@v4
-        with:
-          path: release
-
-      - name: Set artifact name with timestamp
-        id: artifact_name
+      # 5. Upload bundle final des PDFs
+      - name: Set artifact name
+        id: artifact
         run: |
           TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
           ARTIFACT_NAME="PDFs_${TIMESTAMP}"
           echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
           echo "Artifact will be named: $ARTIFACT_NAME.zip"
 
-      - name: Upload final PDFs bundle
+      - name: Upload PDFs artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: release/*.pdf
 
+      # 6. Créer Release (si push avec un tag)
       - name: Create Release (if pushing a tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
