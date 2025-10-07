@@ -1,4 +1,4 @@
-name: Build Typst documents
+name: Build and Publish Typst PDFs
 
 on:
   push:
@@ -14,6 +14,8 @@ jobs:
   build:
     name: Build Typst documents
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
     steps:
       # 1. Checkout
       - name: Checkout repository
@@ -53,7 +55,7 @@ jobs:
             base=$(basename "$typfile" .typ)
             outfile="release/${base}_${TIMESTAMP}.pdf"
             echo "🔧 Compiling $typfile → $outfile"
-            typst compile "$typfile" "$outfile"  --root .
+            typst compile "$typfile" "$outfile" --root .
           done < typst_files.txt
 
       # 5. Upload bundle final des PDFs
@@ -62,19 +64,32 @@ jobs:
         run: |
           TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
           ARTIFACT_NAME="PDFs_${TIMESTAMP}"
-          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "Artifact will be named: $ARTIFACT_NAME.zip"
 
       - name: Upload PDFs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
           path: release/*.pdf
 
-      # 6. Créer Release (si push avec un tag)
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+  deploy:
+    name: Deploy PDFs to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download PDFs artifact
+        uses: actions/download-artifact@v4
         with:
-          name: "Cours — ${{ github.ref_name }}"
-          files: release/*.pdf
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: github-pages-temp
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
