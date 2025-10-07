@@ -48,6 +48,9 @@ jobs:
         uses: lvignoli/typst-action@main
         with:
           source_file: ${{ matrix.file }}
+          options: |
+            --root
+            .
 
       - name: Upload PDF artifact for this job
         uses: actions/upload-artifact@v4
