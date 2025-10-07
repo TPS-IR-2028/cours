@@ -57,8 +57,10 @@ jobs:
         run: |
           mkdir -p release
           TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
+          # récupère juste le nom du fichier sans extension et sans dossier
           base=$(basename "${{ matrix.file }}" .typ)
-          mv "${{ matrix.file }}.pdf" "release/${base}_${TIMESTAMP}.pdf"
+          # déplace le PDF généré (x.typ → x.pdf)
+          mv "$(dirname "${{ matrix.file }}")/${base}.pdf" "release/${base}_${TIMESTAMP}.pdf"
           echo "PDF_NAME=${base}_${TIMESTAMP}.pdf" >> $GITHUB_ENV
 
       - name: Upload individual PDF artifact
