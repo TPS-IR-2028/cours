@@ -1,4 +1,4 @@
-#import "../conf.typ": conf
+#import "../config.typ": conf
 #show: conf.with(subject: "Logique et programmation logique")
 
 #import "@preview/frame-it:1.2.0": *

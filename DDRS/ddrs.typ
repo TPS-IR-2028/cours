@@ -1,4 +1,4 @@
-#import "../conf.typ": conf
+#import "../config.typ": conf
 #show: conf.with(subject: "Développement durable et responsabilité sociétale des entreprises")
 
 #import "@preview/fletcher:0.5.8" as fletcher: diagram, edge, node
