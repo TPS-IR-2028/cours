@@ -48,18 +48,20 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Typst document
+        id: build
         run: |
           base=$(basename "${{ matrix.file }}" .typ)
           mkdir -p build
           typst compile "${{ matrix.file }}"
-          # déplacer le PDF généré dans le dossier build avec nom propre
-          mv "${{ matrix.file%.typ }}.pdf" "build/${base}.pdf"
+          mv "${{ matrix.file }}" "build/${base}.pdf"
+          echo "PDF_NAME=${base}.pdf" >> $GITHUB_ENV
 
       - name: Upload individual PDF artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.file }}
-          path: build/${{ matrix.file%.typ }}.pdf
+          name: ${{ env.PDF_NAME }}
+          path: build/${{ env.PDF_NAME }}
+
 
   # 3. Collecter tous les PDFs dans un artefact global
   collect:
@@ -70,6 +72,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: build
+
+      - name: Flatten PDFs
+        run: |
+          mkdir -p release
+          find build -name '*.pdf' -exec mv {} release/ \;
+          echo "Collected PDFs:"
+          ls -la release
 
       - name: Set artifact name with timestamp
         id: artifact_name
@@ -83,11 +92,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: build/*.pdf
+          path: release/*.pdf
 
       - name: Create Release (if pushing a tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           name: "Cours — ${{ github.ref_name }}"
-          files: build/*.pdf
+          files: release/*.pdf
