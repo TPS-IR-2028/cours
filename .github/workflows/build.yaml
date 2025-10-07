@@ -1,4 +1,4 @@
-name: Build all Typst documents
+name: Build Typst documents
 
 on:
   push:
@@ -11,94 +11,70 @@ permissions:
   contents: write
 
 jobs:
-  find-files:
+  build:
+    name: Build Typst documents
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.prepare.outputs.matrix }}
     steps:
+      # 1. Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Find .typ files (excl. ./config.typ) and emit matrix
-        id: prepare
+      # 2. Installer Typst
+      - name: Install Typst
+        run: |
+          curl -L https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz \
+            -o typst.tar.xz
+          tar -xJf typst.tar.xz
+          sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
+          typst --version
+
+      # 3. Trouver tous les fichiers .typ
+      - name: Find Typst files
+        id: find
         shell: bash
         run: |
-          echo "🔍 Searching for .typ files (excluding ./config.typ)..."
+          echo "🔍 Searching for .typ files..."
           mapfile -d '' -t files < <(find . -type f -name '*.typ' ! -path './config.typ' -print0)
-
           if [ ${#files[@]} -eq 0 ]; then
             echo "❌ No Typst files found. Exiting."
             exit 1
           fi
+          printf '%s\n' "${files[@]}" > typst_files.txt
+          echo "Found ${#files[@]} files:"
+          cat typst_files.txt
 
-          printf '%s\n' "${files[@]}"
-          # Produce a JSON array for the matrix
-          printf '%s\n' "${files[@]}" | python3 -c 'import sys, json; print(json.dumps([l.rstrip("\n") for l in sys.stdin]))' > matrix.json
-          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
-
-  build:
-    needs: find-files
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        file: ${{ fromJson(needs.find-files.outputs.matrix) }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Sanitize artifact name
-        id: sanitize
+      # 4. Compiler tous les fichiers en PDFs avec timestamp
+      - name: Compile Typst files
         shell: bash
         run: |
-          # Remplace les caractères interdits dans les noms d’artefacts
-          safe_name=$(echo "${{ matrix.file }}" | tr '/\\:<>\"|?*\r\n' '_' | sed 's/^\.*//')
-          echo "safe_name=$safe_name" >> $GITHUB_OUTPUT
-          echo "Artifact safe name: $safe_name"
+          mkdir -p release
+          TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
+          while read -r typfile; do
+            base=$(basename "$typfile" .typ)
+            outfile="release/${base}_${TIMESTAMP}.pdf"
+            echo "🔧 Compiling $typfile → $outfile"
+            typst compile "$typfile" "$outfile"  --root .
+          done < typst_files.txt
 
-      - name: Build Typst document (matrix)
-        uses: lvignoli/typst-action@main
-        with:
-          source_file: ${{ matrix.file }}
-          options: |
-            --root
-            .
-
-      - name: Upload PDF artifact for this job
-        uses: actions/upload-artifact@v4
-        with:
-          name: pdf-${{ steps.sanitize.outputs.safe_name }}
-          path: '**/*.pdf'
-
-  collect:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all per-file artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Gather PDFs into build/
+      # 5. Upload bundle final des PDFs
+      - name: Set artifact name
+        id: artifact
         run: |
-          mkdir -p build
-          find artifacts -name '*.pdf' -exec cp {} build/ \;
-          echo "Collected PDFs:"
-          ls -la build
+          TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
+          ARTIFACT_NAME="PDFs_${TIMESTAMP}"
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+          echo "Artifact will be named: $ARTIFACT_NAME.zip"
 
-      - name: Upload all generated PDFs (single artifact)
+      - name: Upload PDFs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PDFs
-          path: build/**/*.pdf
+          name: ${{ env.ARTIFACT_NAME }}
+          path: release/*.pdf
 
-      - name: Get current date
-        id: date
-        run: echo "DATE=$(date +%Y-%m-%d-%H:%M)" >> $GITHUB_ENV
-
-      - name: Create Release (on tag)
+      # 6. Créer Release (si push avec un tag)
+      - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ github.ref_name }} — ${{ env.DATE }}"
-          files: build/**/*.pdf
+          name: "Cours — ${{ github.ref_name }}"
+          files: release/*.pdf
