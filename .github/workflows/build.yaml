@@ -67,7 +67,7 @@ jobs:
       - name: Upload PDFs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: release/*.pdf
 
       # 6. Créer Release (si push avec un tag)
