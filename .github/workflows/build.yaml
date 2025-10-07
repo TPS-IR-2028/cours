@@ -73,6 +73,12 @@ jobs:
           name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
           path: release/*.pdf
 
+      # 6. Upload les PDFs aussi sur GitHub Pages
+      - name: Upload PDFs for GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: release
+
   deploy:
     name: Deploy PDFs to GitHub Pages
     needs: build
@@ -82,14 +88,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages-test
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download PDFs artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.build.outputs.artifact-name }}
-          path: github-pages-temp
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
