@@ -3,6 +3,8 @@
 
 #import "@preview/fletcher:0.5.8" as fletcher: diagram, edge, node
 
+// 30/09
+
 = Cartographie des processus
 
 #diagram(
@@ -137,6 +139,8 @@
 
 = Analyse du Cycle de Vie (ACV)
 
+== Schéma général
+
 #diagram(
   node-stroke: 0.1em,
 
@@ -180,3 +184,50 @@
     - Enfouir déchets ultimes
   ],
 )
+
+// 07/10
+
+#pagebreak()
+#set page("a4")
+
+/ GIEC: Groupement Intergouvernemental des Experts du Climat #sym.arrow rapports #sym.arrow synthèse
+
+/ Puits de carbone: absorbent plus de CO2 qu'ils n'en rejettent (phytoplancton, végétation, ...)
+
+/ Écoconception: conception de produits en tenant compte de leur impact environnemental tout au long de leur cycle de vie
+
+/ ADEME: Agence Départementale de l'Environnement et de la Maîtrise de l'Énergie
+
+Carte de l'Environnement #sym.arrow législation
+
+Différence texte réglementaire et norme: le texte réglementaire est obligatoire, la norme est un guide.
+
+/ Règle du BISOU:
+  - Besoin : Ai-je vraiment besoin de cet objet ou est-ce juste une envie ?
+  - Immédiat : Est-ce que c'est urgent ou puis-je attendre avant d'acheter ?
+  - Semblable : Est-ce que je possède déjà quelque chose qui fait la même chose ?
+  - Origine : D'où vient ce produit et comment a-t-il été fabriqué ?
+  - Utilité : Est-ce que cet objet va vraiment m'être utile sur le long terme ?
+
+
+== Exemple: Production de cabane de jardin
+
++ Définir les étapes de réalisation
+  - Naissance
+  - Vie
+  - Mort
++ Pour chaque étape, identifier les éléments mis en oeuvre et les conséquences / impacts
++ Déterminer les moyens mis en oeuvre pour limiter les impacts #sym.arrow 3 piliers
+  - Économique
+  - Environnemental
+  - Social
+
+Matières premières:
+- Bois
+- Métal
+- Plastique
+- Tissus
+
++ Naissance: récolte des matières premières, transport des matières premières, fabrication des éléments de la cabane
++ Vie: entretien des éléments de la cabane, réparations éventuelles
++ Mort: démontage de la cabane, transport des éléments vers un centre de tri, recyclage ou enfouissement des éléments
