@@ -23,19 +23,17 @@ jobs:
       - id: prepare
         shell: bash
         run: |
-          echo "🔍 Searching for .typ files (excluding ./config.typ)..."
+          echo "🔍 Searching for .typ files..."
           mapfile -d '' -t files < <(find . -type f -name '*.typ' ! -path './config.typ' -print0)
-
           if [ ${#files[@]} -eq 0 ]; then
             echo "❌ No Typst files found. Exiting."
             exit 1
           fi
-
           printf '%s\n' "${files[@]}"
-          printf '%s\n' "${files[@]}" | python3 -c 'import sys, json; print(json.dumps([l.rstrip() for l in sys.stdin]))' > matrix.json
+          # créer la matrice
+          printf '%s\n' "${files[@]}" | python3 -c 'import sys,json; print(json.dumps([l.rstrip() for l in sys.stdin]))' > matrix.json
           echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
-  # 2. Compiler chaque fichier .typ en PDF
   build:
     needs: find-files
     runs-on: ubuntu-latest
@@ -47,23 +45,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Typst document
-        id: build
+      - name: Typst
+        uses: lvignoli/typst-action@main
+        with:
+          source_file: ${{ matrix.file }}
+          options: --root .
+
+      - name: Move PDF to release with timestamp
         run: |
+          mkdir -p release
+          TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
           base=$(basename "${{ matrix.file }}" .typ)
-          mkdir -p build
-          typst compile "${{ matrix.file }}"
-          mv "${{ matrix.file }}" "build/${base}.pdf"
-          echo "PDF_NAME=${base}.pdf" >> $GITHUB_ENV
+          mv "${{ matrix.file }}.pdf" "release/${base}_${TIMESTAMP}.pdf"
+          echo "PDF_NAME=${base}_${TIMESTAMP}.pdf" >> $GITHUB_ENV
 
       - name: Upload individual PDF artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PDF_NAME }}
-          path: build/${{ env.PDF_NAME }}
+          path: release/${{ env.PDF_NAME }}
 
-
-  # 3. Collecter tous les PDFs dans un artefact global
   collect:
     needs: build
     runs-on: ubuntu-latest
@@ -71,14 +72,7 @@ jobs:
       - name: Download all individual PDFs
         uses: actions/download-artifact@v4
         with:
-          path: build
-
-      - name: Flatten PDFs
-        run: |
-          mkdir -p release
-          find build -name '*.pdf' -exec mv {} release/ \;
-          echo "Collected PDFs:"
-          ls -la release
+          path: release
 
       - name: Set artifact name with timestamp
         id: artifact_name
