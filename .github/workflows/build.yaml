@@ -1,4 +1,4 @@
-name: Build all Typst documents
+name: Build Typst documents
 
 on:
   push:
@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   build:
+    name: Build Typst documents
     runs-on: ubuntu-latest
     steps:
       # 1. Checkout
