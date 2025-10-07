@@ -11,6 +11,7 @@ permissions:
   contents: write
 
 jobs:
+  # 1. Trouver tous les fichiers .typ
   find-files:
     runs-on: ubuntu-latest
     outputs:
@@ -19,8 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Find .typ files (excl. ./config.typ) and emit matrix
-        id: prepare
+      - id: prepare
         shell: bash
         run: |
           echo "🔍 Searching for .typ files (excluding ./config.typ)..."
@@ -32,10 +32,10 @@ jobs:
           fi
 
           printf '%s\n' "${files[@]}"
-          # Produce a JSON array for the matrix
-          printf '%s\n' "${files[@]}" | python3 -c 'import sys, json; print(json.dumps([l.rstrip("\n") for l in sys.stdin]))' > matrix.json
+          printf '%s\n' "${files[@]}" | python3 -c 'import sys, json; print(json.dumps([l.rstrip() for l in sys.stdin]))' > matrix.json
           echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
+  # 2. Compiler chaque fichier .typ en PDF
   build:
     needs: find-files
     runs-on: ubuntu-latest
@@ -47,58 +47,47 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sanitize artifact name
-        id: sanitize
-        shell: bash
+      - name: Build Typst document
         run: |
-          # Remplace les caractères interdits dans les noms d’artefacts
-          safe_name=$(echo "${{ matrix.file }}" | tr '/\\:<>\"|?*\r\n' '_' | sed 's/^\.*//')
-          echo "safe_name=$safe_name" >> $GITHUB_OUTPUT
-          echo "Artifact safe name: $safe_name"
+          base=$(basename "${{ matrix.file }}" .typ)
+          mkdir -p build
+          typst compile "${{ matrix.file }}"
+          # déplacer le PDF généré dans le dossier build avec nom propre
+          mv "${{ matrix.file%.typ }}.pdf" "build/${base}.pdf"
 
-      - name: Build Typst document (matrix)
-        uses: lvignoli/typst-action@main
-        with:
-          source_file: ${{ matrix.file }}
-          options: |
-            --root
-            .
-
-      - name: Upload PDF artifact for this job
+      - name: Upload individual PDF artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pdf-${{ steps.sanitize.outputs.safe_name }}
-          path: '**/*.pdf'
+          name: ${{ matrix.file }}
+          path: build/${{ matrix.file%.typ }}.pdf
 
+  # 3. Collecter tous les PDFs dans un artefact global
   collect:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download all per-file artifacts
+      - name: Download all individual PDFs
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: build
 
-      - name: Gather PDFs into build/
+      - name: Set artifact name with timestamp
+        id: artifact_name
         run: |
-          mkdir -p build
-          find artifacts -name '*.pdf' -exec cp {} build/ \;
-          echo "Collected PDFs:"
-          ls -la build
+          TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
+          ARTIFACT_NAME="PDFs_${TIMESTAMP}"
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+          echo "Artifact will be named: $ARTIFACT_NAME.zip"
 
-      - name: Upload all generated PDFs (single artifact)
+      - name: Upload final PDFs bundle
         uses: actions/upload-artifact@v4
         with:
-          name: PDFs
-          path: build/**/*.pdf
+          name: ${{ env.ARTIFACT_NAME }}
+          path: build/*.pdf
 
-      - name: Get current date
-        id: date
-        run: echo "DATE=$(date +%Y-%m-%d-%H:%M)" >> $GITHUB_ENV
-
-      - name: Create Release (on tag)
+      - name: Create Release (if pushing a tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ github.ref_name }} — ${{ env.DATE }}"
-          files: build/**/*.pdf
+          name: "Cours — ${{ github.ref_name }}"
+          files: build/*.pdf
