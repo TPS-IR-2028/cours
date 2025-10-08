@@ -73,7 +73,19 @@ jobs:
           name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
           path: release/*.pdf
 
-      # 6. Upload les PDFs aussi sur GitHub Pages
+      # 6. Create index.html
+      - name: Generate index.html for GitHub Pages
+        shell: bash
+        run: |
+          cd release
+          echo "<!DOCTYPE html><html><body><h1>PDFs</h1><ul>" > index.html
+          for pdf in *.pdf; do
+            echo "<li><a href=\"$pdf\">$pdf</a></li>" >> index.html
+          done
+          echo "</ul></body></html>" >> index.html
+          cd ..
+
+      # 7. Upload PDFs + index.html for GitHub Pages
       - name: Upload PDFs for GitHub Pages
         id: deployment
         uses: actions/upload-pages-artifact@v4
