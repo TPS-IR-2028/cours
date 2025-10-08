@@ -1,4 +1,4 @@
-name: Build Typst documents
+name: Build and Publish Typst PDFs
 
 on:
   push:
@@ -14,6 +14,8 @@ jobs:
   build:
     name: Build Typst documents
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
     steps:
       # 1. Checkout
       - name: Checkout repository
@@ -28,7 +30,14 @@ jobs:
           sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
           typst --version
 
-      # 3. Trouver tous les fichiers .typ
+      # 3. Créer un timestamp unique pour tout le job
+      - name: Set timestamp
+        id: timestamp
+        run: |
+          TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
+      # 4. Trouver tous les fichiers .typ
       - name: Find Typst files
         id: find
         shell: bash
@@ -43,38 +52,63 @@ jobs:
           echo "Found ${#files[@]} files:"
           cat typst_files.txt
 
-      # 4. Compiler tous les fichiers en PDFs avec timestamp
+      # 5. Compiler tous les fichiers en PDFs avec le timestamp global
       - name: Compile Typst files
         shell: bash
         run: |
           mkdir -p release
-          TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
           while read -r typfile; do
             base=$(basename "$typfile" .typ)
             outfile="release/${base}_${TIMESTAMP}.pdf"
             echo "🔧 Compiling $typfile → $outfile"
-            typst compile "$typfile" "$outfile"  --root .
+            typst compile "$typfile" "$outfile" --root .
           done < typst_files.txt
 
-      # 5. Upload bundle final des PDFs
+      # 6. Upload bundle final des PDFs comme artifact GitHub Actions
       - name: Set artifact name
         id: artifact
         run: |
-          TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
           ARTIFACT_NAME="PDFs_${TIMESTAMP}"
-          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "Artifact will be named: $ARTIFACT_NAME.zip"
 
       - name: Upload PDFs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
           path: release/*.pdf
 
-      # 6. Créer Release (si push avec un tag)
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+      # 7. Créer index.html avec le timestamp global
+      - name: Generate index.html for GitHub Pages
+        shell: bash
+        run: |
+          cd release
+          echo "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>PDFs</title></head><body><h1>Télécom Physique Strasbourg — Informatique et Réseaux — Promotion 2028</h1><h2>Cours</h2><ul>" > index.html
+          for pdf in *.pdf; do
+            echo "<li><a href=\"$pdf\">$pdf</a></li>" >> index.html
+          done
+          echo "</ul></body></html>" >> index.html
+          cd ..
+
+      # 8. Upload PDFs + index.html pour GitHub Pages
+      - name: Upload PDFs for GitHub Pages
+        id: deployment
+        uses: actions/upload-pages-artifact@v4
         with:
-          name: "Cours — ${{ github.ref_name }}"
-          files: release/*.pdf
+          path: release
+
+  deploy:
+    name: Deploy PDFs to GitHub Pages
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
