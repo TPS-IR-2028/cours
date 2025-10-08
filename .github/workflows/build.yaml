@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           cd release
-          echo "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>PDFs</title></head><body><h1>PDFs</h1><ul>" > index.html
+          echo "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>PDFs</title></head><body><h1>Télécom Physique Strasbourg — Informatique et Réseaux — Promotion 2028</h1><h2>Cours</h2><ul>" > index.html
           for pdf in *.pdf; do
             echo "<li><a href=\"$pdf\">$pdf</a></li>" >> index.html
           done
